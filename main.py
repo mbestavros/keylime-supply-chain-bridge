@@ -2,33 +2,32 @@ import getopt, json, sys
 from source import importer, intoto_tools
 
 def main(argv):
-    allowlist_path = None
-    excludelist_path = None
-    keypath = None
-    link_path = None
-    policy = None
+    owner = None
+    repository = None
+    token = None
+    destination = None
     try:
-        opts, _ = getopt.getopt(argv,"ha:e:k:l:",["allowlistfile=", "excludelistfile=", "linkfile="])
+        opts, _ = getopt.getopt(argv,"ho:r:t:d:",["owner=", "repository=", "token=", "destination="])
     except getopt.GetoptError:
         print('main.py OPTIONS')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("test.py -a <allowlist file> -e <exclude list file> -k <private key file> -l <in-toto link file>")
+            print("main.py -o <repository owner> -r <repository name> -t <Github access token> -d <artifact destination on Keylime target>")
             sys.exit()
-        elif opt in ("-a", "--allowlistfile"):
-            allowlist_path = arg
-        elif opt in ("-e", "--excludelistfile"):
-            excludelist_path = arg
-        elif opt in ("-k", "--keyfile"):
-            keypath = arg
-        elif opt in ("-l", "--linkfile"):
-            link_path = arg
+        elif opt in ("-o", "--owner"):
+            owner = arg
+        elif opt in ("-r", "--repository"):
+            repository = arg
+        elif opt in ("-t", "--token"):
+            token = arg
+        elif opt in ("-d", "--destination"):
+            destination = arg
 
-    if allowlist_path:
-        policy = importer.create_ima_policy(allowlist_path, excludelist_path, keypath)
-    if link_path:
-        policy = intoto_tools.convert_link(link_path, policy)
+    if owner:
+        policy = importer.create_ima_policy(owner, repository, token)
+    if destination:
+        policy = intoto_tools.convert_link(destination, policy)
     print(json.dumps(policy))
     with open("keylime-policy.json", "w") as f:
         f.write(json.dumps(policy))
