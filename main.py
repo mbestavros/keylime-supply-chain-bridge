@@ -1,5 +1,5 @@
 import getopt, json, sys
-from source import importer, intoto_tools
+from source import artifacts, intoto_tools
 
 def main(argv):
     owner = None
@@ -24,13 +24,16 @@ def main(argv):
         elif opt in ("-d", "--destination"):
             destination = arg
 
-    if owner:
-        policy = importer.create_ima_policy(owner, repository, token)
+    if owner and repository and token:
+        results = artifacts.fetch_from_github(owner, repository, token)
+    else:
+        print("--owner, --repository, and --token are all required to fetch artifacts from Github")
     if destination:
-        policy = intoto_tools.convert_link(destination, policy)
-    print(json.dumps(policy))
-    with open("keylime-policy.json", "w") as f:
-        f.write(json.dumps(policy))
+        print("TODO")
+        #policy = intoto_tools.convert_link(destination, policy)
+    #print(json.dumps(policy))
+    #with open("keylime-policy.json", "w") as f:
+    #    f.write(json.dumps(policy))
 
 if __name__ == "__main__":
    main(sys.argv[1:])
