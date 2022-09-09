@@ -25,7 +25,7 @@ def main(argv):
             destination = arg
 
     if owner and repository and token:
-        results = artifacts.fetch_from_github(owner, repository, token)
+        verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token)
     else:
         print("--owner, --repository, and --token are all required to fetch artifacts from Github")
     if destination:

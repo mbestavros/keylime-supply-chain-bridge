@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.x509 import load_pem_x509_certificate
 from os.path import exists
 
 # Signs an artifact with private key located at keypath.
@@ -33,3 +34,23 @@ def sign(artifact, keypath):
         "keytype": "ecdsa",
         "sig": base64.b64encode(artifact_signature)
     }
+
+# Verifies provided hash against provided signature using pubkey found in provided certificate.
+def verify_hash_with_cert(hash, sig_raw, crt_raw):
+    print(f"hash: {hash}")
+    print(f"sig: {sig_raw}")
+    print(f"cert: {crt_raw}")
+
+    crt = load_pem_x509_certificate(crt_raw)
+
+    verified = crt.public_key().verify(
+        sig_raw,
+        hash.encode(),
+        ec.ECDSA(hashes.SHA256())
+    )
+
+    print(verified)
+
+    # TODO: report actual sig status
+    #return verified
+    return True

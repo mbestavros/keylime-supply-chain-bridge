@@ -1,81 +1,27 @@
+import json
 import os
 import sys
+import requests
+from . import github, signing
 
-from githubgql import githubgql
+def fetch_verified_hashes(owner, repo, token):
+    artifact_urls, link_urls = github.fetch_links_from_github(owner, repo, token)
 
-RELEASES_QUERY = '''
-query($owner:String!, $repo:String!, $releasesCursor:String) {
-  repository(owner: $owner, name: $repo) {
-    releases(first:100, after:$releasesCursor) {
-      pageInfo { endCursor hasNextPage }
-      nodes {
-        isLatest
-        tagName
-      }
-    }
-  }
-}
-'''
+    link_response = requests.get(link_urls["compile"])
+    paths = json.loads(link_response.content)["signed"]["products"]
+    verified_hashes = []
+    for path in paths:
+        product_name = os.path.basename(path)
+        hash = paths[path]["sha256"]
+        product_signing_materials = artifact_urls[product_name]
 
-ARTIFACTS_QUERY = '''
-query($owner:String!, $repo:String!, $tagName:String!, $releaseAssetsCursor:String) {
-  repository(owner: $owner, name: $repo) {
-    release(tagName: $tagName) {
-      releaseAssets(first: 100, after:$releaseAssetsCursor) {
-        pageInfo { endCursor hasNextPage }
-        nodes {
-          name
-          downloadUrl
-        }
-      }
-    }
-  }
-}
-'''
+        sig_response = requests.get(product_signing_materials["sig"])
+        crt_response = requests.get(product_signing_materials["crt"])
 
-def fetch_from_github(owner, repo, token):
-    # Pagination cursors needed for API requests
-    releases_cursors = {"releasesCursor": ["repository", "releases"]}
-    artifacts_cursors = {"releaseAssetsCursor": ["repository", "release", "releaseAssets"]}
+        if not signing.verify_hash_with_cert(hash, sig_response.content, crt_response.content):
+            print("Hash verification failed!")
+            sys.exit(1)
 
-    # Fetch all releases from provided repo and find latest
-    try:
-        releases_result = githubgql.graphql(RELEASES_QUERY, token=token, cursors=releases_cursors, owner=owner, repo=repo)
-    except githubgql.TokenError as e:
-        print(e.error)
-        sys.exit(0)
+        verified_hashes += [hash]
 
-    latest_tag_name = None
-    for release in releases_result["repository"]["releases"]["nodes"]:
-        if release["isLatest"] == True:
-            latest_tag_name = release["tagName"]
-
-    # Fetch all asset URLs from the latest release
-    try:
-        artifacts_result = githubgql.graphql(ARTIFACTS_QUERY, token=token, cursors=artifacts_cursors, owner=owner, repo=repo, tagName=latest_tag_name)
-    except githubgql.TokenError as e:
-        print(e.error)
-        sys.exit(0)
-
-    # Organize URLs into understandable dictionaries
-    artifacts_formatted = {}
-    link_urls = {}
-    for asset in artifacts_result["repository"]["release"]["releaseAssets"]["nodes"]:
-        root, extension = os.path.splitext(asset["name"])
-        url = asset["downloadUrl"]
-        if extension == ".link":
-            link_urls[root.split(".")[0]] = url
-        else:
-            if root not in artifacts_formatted.keys():
-                artifacts_formatted[root] = {}
-            match extension:
-                case ".sig":
-                    artifacts_formatted[root]["sig"] = url
-                case ".crt":
-                    artifacts_formatted[root]["crt"] = url
-                case _:
-                    artifacts_formatted[root]["artifact"] = url
-
-
-    print(f"Formatted artifact URLs: {artifacts_formatted}")
-    print(f"Link urls: {link_urls}")
+    return verified_hashes
