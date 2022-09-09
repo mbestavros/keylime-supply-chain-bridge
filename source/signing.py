@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.exceptions import InvalidSignature
 from cryptography.x509 import load_pem_x509_certificate
 from os.path import exists
 
@@ -37,19 +38,21 @@ def sign(artifact, keypath):
 
 # Verifies provided hash against provided signature using pubkey found in provided certificate.
 def verify_hash_with_cert(hash, sig_raw, crt_raw):
-    print(f"hash: {hash}")
-    print(f"sig: {sig_raw}")
-    print(f"cert: {crt_raw}")
+    # print(f"hash: {hash}")
+    # print(f"sig: {sig_raw}")
+    # print(f"cert: {crt_raw}")
 
     crt = load_pem_x509_certificate(crt_raw)
 
-    verified = crt.public_key().verify(
-        sig_raw,
-        hash.encode(),
-        ec.ECDSA(hashes.SHA256())
-    )
-
-    print(verified)
+    try:
+        verified = crt.public_key().verify(
+            sig_raw,
+            hash.encode(),
+            ec.ECDSA(hashes.SHA256())
+        )
+    except InvalidSignature:
+        print("Signature validation failed!")
+        # return False
 
     # TODO: report actual sig status
     #return verified
