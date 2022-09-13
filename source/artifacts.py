@@ -1,10 +1,11 @@
+import hashlib
 import json
 import os
 import sys
 import requests
 from . import github, signing
 
-def fetch_verified_hashes(owner, repo, token, local_app_path=None):
+def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_verify=False):
     artifact_urls, link_urls = github.fetch_links_from_github(owner, repo, token)
 
     link_response = requests.get(link_urls["compile"])
@@ -19,16 +20,29 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None):
         crt_response = requests.get(artifact_signing_materials["crt"])
 
         if local_app_path and os.path.basename(local_app_path) == artifact_name:
-            print(f"Verifying local binary at {local_app_path} against signing materials from Github")
+            print(f"Verifying local binary at {local_app_path} against signing materials from {owner}/{repo}")
             with open(local_app_path, "rb") as f:
                 artifact_raw = f.read()
         else:
-            print(f"Verifying remote binary from Github against signing materials from Github")
+            print(f"Verifying remote binary from {owner}/{repo} against signing materials from {owner}/{repo}")
             artifact_raw = requests.get(artifact_signing_materials["artifact"]).content
 
-        if not signing.verify_hash_with_cert(artifact_raw, sig_response.content, crt_response.content):
-            print("Binary signature verification failed!")
+        if hashlib.sha256(artifact_raw).hexdigest() == hash:
+            print(f"Artifact hash matches link file!")
+        else:
+            print(f"Artifact hash doesn't match link file!")
             sys.exit(1)
+
+        if not signing.verify_hash_with_cert(artifact_raw, sig_response.content, crt_response.content):
+            sys.exit(1)
+
+        if sigstore_verify:
+            print(f"Verifying presence of valid signature and inclusion proof against Rekor...")
+            if signing.verify_inclusion_proof(artifact_raw, sig_response.content, crt_response.content):
+                print("Sigstore validation passed!")
+            else:
+                print("Sigstore validation failed!")
+                sys.exit(1)
 
         verified_hashes += [hash]
 

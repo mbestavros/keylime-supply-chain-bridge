@@ -7,16 +7,17 @@ def main(argv):
     token = None
     local_app_path = None
     destination_app_path = None
+    sigstore_verify = False
     allowlist = None
     amended_policy = None
     try:
-        opts, _ = getopt.getopt(argv,"ho:r:t:l:d:a:",["owner=", "repository=", "token=", "local-app-path=", "destination-app-path", "allowlist="])
+        opts, _ = getopt.getopt(argv,"ho:r:t:l:d:a:s",["owner=", "repository=", "token=", "local-app-path=", "destination-app-path", "allowlist=", "sigstore"])
     except getopt.GetoptError:
         print('main.py OPTIONS')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print("main.py -o <repository owner> -r <repository name> -t <Github access token> -l <local app path> -d <destination app path on Keylime target> -a <local path of Keylime allowlist>")
+            print("main.py -o <repository owner> -r <repository name> -t <Github access token> -l <local app path> -d <destination app path on Keylime target> -a <local path of Keylime allowlist> -s <whether to verify inclusion proofs against Sigstore>")
             sys.exit()
         elif opt in ("-o", "--owner"):
             owner = arg
@@ -30,9 +31,11 @@ def main(argv):
             destination_app_path = arg
         elif opt in ("-a", "--allowlist"):
             allowlist = arg
+        elif opt in ("-s", "--sigstore"):
+            sigstore_verify = True
 
     if owner and repository and token:
-        verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token, local_app_path)
+        verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token, local_app_path, sigstore_verify)
         print(f"Verified hashes for {owner}/{repository}:")
         for hash in verified_hashes:
             print(hash)

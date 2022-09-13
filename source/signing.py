@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.exceptions import InvalidSignature
 from cryptography.x509 import load_pem_x509_certificate
 from os.path import exists
+from .sigstore import merkle, sigstore
 
 # Signs an artifact with private key located at keypath.
 def sign(artifact, keypath):
@@ -35,7 +36,7 @@ def sign(artifact, keypath):
         "sig": base64.b64encode(artifact_signature)
     }
 
-# Verifies provided hash against provided signature using pubkey found in provided certificate.
+# Verifies provided artifact against provided signature using pubkey found in provided certificate.
 def verify_hash_with_cert(artifact_raw, sig_raw, crt_raw):
     sig = base64.b64decode(sig_raw)
     crt = load_pem_x509_certificate(crt_raw)
@@ -46,9 +47,52 @@ def verify_hash_with_cert(artifact_raw, sig_raw, crt_raw):
             artifact_raw,
             ec.ECDSA(hashes.SHA256())
         )
+        print("Artifact signature validation passed!")
         verified = True
     except InvalidSignature:
-        print("Signature validation failed!")
+        print("Artifact signature validation failed!")
         verified = False
 
     return verified
+
+# Verifies provided artifact for inclusion in the Sigstore transparency log.
+def verify_inclusion_proof(artifact_raw, sig_raw, crt_raw):
+    sig = base64.b64decode(sig_raw)
+    pubkey = load_pem_x509_certificate(crt_raw).public_key()
+    artifact_hash = hashlib.sha256(artifact_raw).hexdigest()
+
+    search_response = sigstore.search(hash=artifact_hash)
+    uuids = json.loads(search_response.content)
+
+    print(f'Found Rekor entries matching provided artifact hash. Verifying...')
+
+    for uuid in uuids:
+
+        fetch_uuid_response = sigstore.fetch_with_uuid(uuid=uuid)
+
+        entries = json.loads(fetch_uuid_response.content)
+        for key in entries.keys():
+            entry = entries[key]
+        encoded_rekord = entry["body"]
+        rekor_cert = json.loads(base64.b64decode(encoded_rekord))['spec']['signature']['content']
+
+        valid_signature_found = False
+        try:
+            pubkey.verify(base64.b64decode(rekor_cert), artifact_raw, ec.ECDSA(hashes.SHA256()))
+            print(f'{uuid[:16]}: Rekor signature validation: PASS')
+            valid_signature_found = True
+        except Exception as e:
+            continue
+
+        if valid_signature_found:
+            try:
+                merkle.verify_merkle_inclusion(entry)
+                print("Inclusion proof verified!")
+                return True
+            except merkle.InvalidInclusionProofError as e:
+                print("Inclusion proof failed to verify!")
+                print(e)
+                return False
+        else:
+            print("No valid signature was found in any of the fetched Rekor entries!")
+            return False
