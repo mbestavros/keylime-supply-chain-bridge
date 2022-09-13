@@ -5,17 +5,18 @@ def main(argv):
     owner = None
     repository = None
     token = None
-    destination = None
+    local_app_path = None
+    destination_app_path = None
     allowlist = None
     amended_policy = None
     try:
-        opts, _ = getopt.getopt(argv,"ho:r:t:p:a:",["owner=", "repository=", "token=", "app-path=", "allowlist="])
+        opts, _ = getopt.getopt(argv,"ho:r:t:l:d:a:",["owner=", "repository=", "token=", "local-app-path=", "destination-app-path", "allowlist="])
     except getopt.GetoptError:
         print('main.py OPTIONS')
         sys.exit(2)
     for opt, arg in opts:
-        if opt == '-h':
-            print("main.py -o <repository owner> -r <repository name> -t <Github access token> -p <app destination path on Keylime target> -a <local path of Keylime allowlist>")
+        if opt in ("-h", "--help"):
+            print("main.py -o <repository owner> -r <repository name> -t <Github access token> -l <local app path> -d <destination app path on Keylime target> -a <local path of Keylime allowlist>")
             sys.exit()
         elif opt in ("-o", "--owner"):
             owner = arg
@@ -23,22 +24,26 @@ def main(argv):
             repository = arg
         elif opt in ("-t", "--token"):
             token = arg
-        elif opt in ("-p", "--app-path"):
-            destination = arg
+        elif opt in ("-l", "--local-app-path"):
+            local_app_path = arg
+        elif opt in ("-d", "--destination-app-path"):
+            destination_app_path = arg
         elif opt in ("-a", "--allowlist"):
             allowlist = arg
 
     if owner and repository and token:
-        verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token)
-        print(f"Verified hashes for {owner}/{repository}: {verified_hashes}")
+        verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token, local_app_path)
+        print(f"Verified hashes for {owner}/{repository}:")
+        for hash in verified_hashes:
+            print(hash)
     else:
         print("--owner, --repository, and --token are all required to fetch artifacts from Github")
-    if destination:
+    if destination_app_path:
         verified_hash = verified_hashes[0]
-        print(f"Adding verified hash {verified_hash} to allowlist with destination path {destination}")
+        print(f"Adding verified hash {verified_hash} to allowlist with destination path {destination_app_path}")
         if allowlist:
             print(f"Using existing allowlist present at {allowlist}")
-        amended_policy = allowlists.append_path_to_allowlist(allowlists.get_allowlist(allowlist), destination, verified_hash)
+        amended_policy = allowlists.append_path_to_allowlist(allowlists.get_allowlist(allowlist), destination_app_path, verified_hash)
 
     if amended_policy:
         with open("keylime-policy.json", "w") as f:

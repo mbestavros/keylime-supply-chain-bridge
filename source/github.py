@@ -35,6 +35,7 @@ def fetch_links_from_github(owner, repo, token):
         root, extension = os.path.splitext(asset["name"])
         url = asset["downloadUrl"]
         if extension == ".link":
+            # Needed to get the base step name from a link file's path
             link_urls[root.split(".")[0]] = url
         else:
             if root not in artifacts_formatted.keys():

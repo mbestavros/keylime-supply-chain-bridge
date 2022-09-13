@@ -1,7 +1,7 @@
 import copy, datetime, json, re
 from .constants import constants
 
-# Converts legacy allowlists to new JSON format.
+# Looks for allowlists at allowlist_path, converts it to new JSON format if necessary, then returns.
 def get_allowlist(allowlist_path=None):
     if allowlist_path:
         with open(allowlist_path, "r") as f:
