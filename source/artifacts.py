@@ -39,7 +39,10 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
 
         if experimental:
             print("EXPERIMENTAL: Verifying in-toto supply chain layout")
-            intoto_tools.verify_layout(artifact_raw, link_urls, id_key_urls)
+            try:
+                intoto_hash = intoto_tools.verify_layout(artifact_raw, link_urls, id_key_urls)
+            except Exception as e:
+                print(f"in-toto verification failed! Exception: {e}")
 
         if hashlib.sha256(artifact_raw).hexdigest() == hash:
             print(f"Artifact hash matches link file!")

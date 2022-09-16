@@ -1,8 +1,10 @@
-import copy, datetime, requests, os, tempfile
+import copy, datetime, requests, tempfile
+import hashlib
+from in_toto import verifylib
 from in_toto.models.layout import Layout, Step, Inspection
 from in_toto.models.metadata import Metablock
 from securesystemslib.interface import (generate_and_write_rsa_keypair,
-    import_rsa_privatekey_from_file)
+    import_rsa_privatekey_from_file, import_ed25519_publickey_from_file)
 from .constants import constants
 
 # Reads an in-toto .link file present at link_path and converts it to a Keylime
@@ -57,7 +59,8 @@ def verify_layout(artifact, link_urls, id_key_urls):
 
         # Add functionary keys from Github to layout
         for key_name in id_key_urls.keys():
-            functionary_keys[key_name] = layout.add_functionary_key_from_path(f"{tmpdirname}/{id_key_urls[key_name]['filename']}")
+            imported_key = import_ed25519_publickey_from_file(f"{tmpdirname}/{id_key_urls[key_name]['filename']}")
+            functionary_keys[key_name] = layout.add_functionary_key(imported_key)
 
         layout.set_relative_expiration(days=1)
 
@@ -66,10 +69,11 @@ def verify_layout(artifact, link_urls, id_key_urls):
 
         step_compile.set_expected_command_from_string("go build")
 
-        step_compile.add_product_rule_from_string("CREATE /home/runner/work/supply-chain-pipeline-demo/supply-chain-pipeline-demo/hello-go/hello-go")
+        step_compile.add_product_rule_from_string("CREATE hello-go")
         step_compile.add_product_rule_from_string("DISALLOW *")
 
         inspection = Inspection(name="inspect")
+        inspection.set_run_from_string("echo hello")
         inspection.add_material_rule_from_string(
             "MATCH artifact WITH PRODUCTS FROM compile")
 
@@ -80,4 +84,8 @@ def verify_layout(artifact, link_urls, id_key_urls):
         metablock.sign(layout_key)
         metablock.dump(f"{tmpdirname}/root.layout")
 
-        print(os.listdir(tmpdirname))
+        try:
+            verifylib.in_toto_verify(metablock, {layout_key["keyid"]: layout_key}, tmpdirname))
+            return hashlib.sha256(artifact).hexdigest()
+        except Exception as e:
+            raise
