@@ -1,5 +1,4 @@
-import copy, datetime, requests, tempfile
-import hashlib
+import copy, datetime, requests, shutil, tempfile
 from in_toto import verifylib
 from in_toto.models.layout import Layout, Step, Inspection
 from in_toto.models.metadata import Metablock
@@ -28,16 +27,17 @@ def convert_link(link_path, policy=None):
 
     return policy
 
-def verify_layout(artifact, link_urls, id_key_urls):
+def verify_layout(artifacts, link_urls, id_key_urls, layout_definition=None):
     # Dictionary to store all functionary keys
     functionary_keys = {}
 
     # Since in-toto validates files in a directory, use a temporary directory for verification.
     with tempfile.TemporaryDirectory() as tmpdirname:
 
-        # Write artifact to verification directory
-        with open(f"{tmpdirname}/artifact", "wb") as f:
-            f.write(artifact)
+        # Write artifacts to verification directory
+        for artifact_name in artifacts.keys():
+            with open(f"{tmpdirname}/{artifact_name}", "wb") as f:
+                f.write(artifacts[artifact_name])
 
         # Write linkfiles from Github to verification directory
         for link in link_urls.keys():
@@ -51,41 +51,45 @@ def verify_layout(artifact, link_urls, id_key_urls):
             with open(f"{tmpdirname}/{id_key_urls[key_name]['filename']}", "wb") as f:
                 f.write(key_response.content)
 
-        # Create a layout key
-        layout_key_path = generate_and_write_rsa_keypair(password="123", filepath=f"{tmpdirname}/layout_key")
-        layout_key = import_rsa_privatekey_from_file(layout_key_path, password="123")
+        if layout_definition:
+            shutil.copy(layout_definition, f"{tmpdirname}/root.layout")
+        else:
+            # Create a layout key
+            layout_key_path = generate_and_write_rsa_keypair(password="123", filepath=f"{tmpdirname}/layout_key")
+            layout_key = import_rsa_privatekey_from_file(layout_key_path, password="123")
 
-        layout = Layout()
+            layout = Layout()
 
-        # Add functionary keys from Github to layout
-        for key_name in id_key_urls.keys():
-            imported_key = import_ed25519_publickey_from_file(f"{tmpdirname}/{id_key_urls[key_name]['filename']}")
-            functionary_keys[key_name] = layout.add_functionary_key(imported_key)
+            # Add functionary keys from Github to layout
+            for key_name in id_key_urls.keys():
+                imported_key = import_ed25519_publickey_from_file(f"{tmpdirname}/{id_key_urls[key_name]['filename']}")
+                functionary_keys[key_name] = layout.add_functionary_key(imported_key)
 
-        layout.set_relative_expiration(days=1)
+            layout.set_relative_expiration(days=1)
 
-        step_compile = Step(name="compile")
-        step_compile.pubkeys = [functionary_keys["developer"]["keyid"]]
+            step_compile_name = "compile"
+            step_compile = Step(name=step_compile_name)
+            step_compile.pubkeys = [functionary_keys["developer"]["keyid"]]
 
-        step_compile.set_expected_command_from_string("go build")
+            step_compile.set_expected_command_from_string("go build")
 
-        step_compile.add_product_rule_from_string("CREATE hello-go")
-        step_compile.add_product_rule_from_string("DISALLOW *")
+            step_compile.add_product_rule_from_string("CREATE hello-go")
+            step_compile.add_product_rule_from_string("DISALLOW *")
 
-        inspection = Inspection(name="inspect")
-        inspection.set_run_from_string("echo hello")
-        inspection.add_material_rule_from_string(
-            "MATCH artifact WITH PRODUCTS FROM compile")
+            inspection = Inspection(name="inspect")
+            inspection.set_run_from_string("echo hello")
+            materials_list = ",".join(artifacts.keys())
+            inspection.add_material_rule_from_string(
+                f"MATCH {materials_list} WITH PRODUCTS FROM {step_compile_name}")
 
-        layout.steps = [step_compile]
-        layout.inspect = [inspection]
+            layout.steps = [step_compile]
+            layout.inspect = [inspection]
 
-        metablock = Metablock(signed=layout)
-        metablock.sign(layout_key)
-        metablock.dump(f"{tmpdirname}/root.layout")
+            metablock = Metablock(signed=layout)
+            metablock.sign(layout_key)
+            metablock.dump(f"{tmpdirname}/root.layout")
 
         try:
-            verifylib.in_toto_verify(metablock, {layout_key["keyid"]: layout_key}, tmpdirname))
-            return hashlib.sha256(artifact).hexdigest()
+            verifylib.in_toto_verify(metablock, {layout_key["keyid"]: layout_key}, tmpdirname)
         except Exception as e:
             raise
