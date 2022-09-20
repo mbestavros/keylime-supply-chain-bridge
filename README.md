@@ -43,6 +43,35 @@ If desired, the tool can also validate a locally-sourced binary against signing 
 > python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your access token> -l /root/hello-go
 ```
 
+### Validating against in-toto
+
+The tool includes support for validating release artifacts against an in-toto supply chain layout.
+
+There are several validation options, each with varying complexity. The desired option can be specified with `-i` or `--intoto`:
+
+- `simple`: This approach inspects an in-toto linkfile and verifies that any provided binaries are present as "products" of that link. The tool assumes the linkfile's associated step is called "compile".
+- `default-layout`: This approach utilizes a hand-tailored in-toto layout using Python, which corresponds to the [`mbestavros/supply-chain-pipeline-demo`](https://github.com/mbestavros/supply-chain-pipeline-demo) repository.
+- `/path/to/layout.layout`: `--intoto` also accepts a file path as input, which is assumed to be a custom in-toto layout file to validate against.
+
+If providing a custom layout, it must be signed by a keypair, and that keypair must also be provided with the following options:
+
+`-k` or `--intoto-key`: The path to the root name of a public/private key pair. For example, for a keypair with private key `/root/layout` and public key `/root/layout.pub`, `-k /root/layout` should be used.
+`-p` or `--intoto-key-password`: The password for the public/private key pair.
+
+Example commands:
+
+```shell
+> python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your access token> -i simple
+```
+
+```shell
+> python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your access token> -i default-layout
+```
+
+```shell
+> python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your access token> -i artifacts/root.layout -k artifacts/layout_key -p 123
+```
+
 ### Writing to a Keylime policy
 
 The tool can also forward validated hashes to a Keylime policy.
@@ -71,3 +100,11 @@ The tool also includes an option to validate the retrieved binary and signing ma
 - verify inclusion proof in the transparency log
 
 as an additional check on top of the existing checks.
+
+### Example artifacts
+
+A set of useful artifacts are included in the [`artifacts`](/artifacts/) directory, including:
+
+- a sample Keylime allowlist (which can be used as input to the tool with `-a` or `--allowlist`)
+- a sample in-toto layout (which corresponds to the [`mbestavros/supply-chain-pipeline-demo`](https://github.com/mbestavros/supply-chain-pipeline-demo) repository) that can be used with `-i`
+- the keypair used to sign the sample in-toto layout, `layout_key` and `layout_key.pub`, which can be used with `-k`. The private key's password (`123`) must also be specified with `-p`.

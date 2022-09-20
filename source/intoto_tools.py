@@ -1,4 +1,4 @@
-import copy, datetime, requests, shutil, tempfile
+import copy, datetime, requests, shutil, sys, tempfile
 from in_toto import verifylib
 from in_toto.models.layout import Layout, Step, Inspection
 from in_toto.models.metadata import Metablock
@@ -27,7 +27,7 @@ def convert_link(link_path, policy=None):
 
     return policy
 
-def verify_layout(artifacts, link_urls, id_key_urls, layout_definition=None):
+def verify_layout(artifacts, link_urls, id_key_urls, intoto_args):
     # Dictionary to store all functionary keys
     functionary_keys = {}
 
@@ -51,11 +51,18 @@ def verify_layout(artifacts, link_urls, id_key_urls, layout_definition=None):
             with open(f"{tmpdirname}/{id_key_urls[key_name]['filename']}", "wb") as f:
                 f.write(key_response.content)
 
-        if layout_definition:
-            shutil.copy(layout_definition, f"{tmpdirname}/root.layout")
+        if intoto_args.get("layout_path") and intoto_args.get("layout_key"):
+            metablock = Metablock.load(intoto_args["layout_path"])
+            layout_key = import_rsa_privatekey_from_file(intoto_args["layout_key"], password=intoto_args.get("layout_key_password"))
+
+        elif bool(intoto_args.get("layout_path")) ^ bool(intoto_args.get("layout_key")):
+            print("ERROR: Both --intoto and --intoto-key are required for custom layout checks!")
+            sys.exit(1)
         else:
             # Create a layout key
             layout_key_path = generate_and_write_rsa_keypair(password="123", filepath=f"{tmpdirname}/layout_key")
+            shutil.copy(f"{tmpdirname}/layout_key", "layout_key")
+            shutil.copy(f"{tmpdirname}/layout_key.pub", "layout_key.pub")
             layout_key = import_rsa_privatekey_from_file(layout_key_path, password="123")
 
             layout = Layout()
@@ -88,8 +95,8 @@ def verify_layout(artifacts, link_urls, id_key_urls, layout_definition=None):
             metablock = Metablock(signed=layout)
             metablock.sign(layout_key)
             metablock.dump(f"{tmpdirname}/root.layout")
+            metablock.dump("root.layout")
 
-        try:
-            verifylib.in_toto_verify(metablock, {layout_key["keyid"]: layout_key}, tmpdirname)
-        except Exception as e:
-            raise
+
+        key_dict = {layout_key["keyid"]: layout_key}
+        verifylib.in_toto_verify(metablock, key_dict, tmpdirname)

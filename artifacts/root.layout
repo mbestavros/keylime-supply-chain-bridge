@@ -1,0 +1,73 @@
+{
+ "signatures": [
+  {
+   "keyid": "b9a36c8c959fdf2f8858a0fd5beb671ac0d5b0c7ae20d485b3ab4bbde4dee188",
+   "sig": "55e836af25154f70820ad523e1b56cd440ecb45e3648c47ca3a091bf85d4412342623fa9b5ca3e939f5fd6aeb49a6de3ba94ed42b2171b89491a85d6df743bb1eebacee43ea921c6df81936faead5cf936ec666c5335a12622bedee67ba3d1e848df67c88357a4c8e7eba5c99e4a485d24d5dd954a139a0a1befc451ac2bf87c37742fe3c28dd74ec893ea185f124a5cf38299e0be171fbf8f221e27f71440cf579ea4a9468bdcc805f005e184acaa0dde00e215f95e306e7c6ff47764a52410954dc1d83ae6164de21793a2634412cb9448e83ef1477dfe163c6351b9d3dc5da86b8898b6d933603e3f8a18dedfc399ae12b30898ac9db677d0744a3a0bf4c75915a12845181daff0e621041dcf73b49bb2ca35c10647cac4685ed3b88c236e44fcb4df6496349603fea4332dba71ae694b4f2f2a8430f2b5b0134e6a92dc5ec731b0e8c2d582d68262f459737ab2f9a371a053570c905952bf8c928e79357019772b7f72b1095f53f32545d394ed5d768087b15679a4d708c85b5c531c3055"
+  }
+ ],
+ "signed": {
+  "_type": "layout",
+  "expires": "2022-09-21T13:42:07Z",
+  "inspect": [
+   {
+    "_type": "inspection",
+    "expected_materials": [
+     [
+      "MATCH",
+      "hello-go",
+      "WITH",
+      "PRODUCTS",
+      "FROM",
+      "compile"
+     ]
+    ],
+    "expected_products": [],
+    "name": "inspect",
+    "run": [
+     "echo",
+     "hello"
+    ]
+   }
+  ],
+  "keys": {
+   "b7ac2c31c7a5c9644d0b3ab16017a700a129c8d25538e22a53a1fee9b0ca4d73": {
+    "keyid": "b7ac2c31c7a5c9644d0b3ab16017a700a129c8d25538e22a53a1fee9b0ca4d73",
+    "keyid_hash_algorithms": [
+     "sha256",
+     "sha512"
+    ],
+    "keytype": "ed25519",
+    "keyval": {
+     "public": "74a6f4d47d8ce363e62f70de3f953d584eb4105fa199e2d54a06fc06e509180c"
+    },
+    "scheme": "ed25519"
+   }
+  },
+  "readme": "",
+  "steps": [
+   {
+    "_type": "step",
+    "expected_command": [
+     "go",
+     "build"
+    ],
+    "expected_materials": [],
+    "expected_products": [
+     [
+      "CREATE",
+      "hello-go"
+     ],
+     [
+      "DISALLOW",
+      "*"
+     ]
+    ],
+    "name": "compile",
+    "pubkeys": [
+     "b7ac2c31c7a5c9644d0b3ab16017a700a129c8d25538e22a53a1fee9b0ca4d73"
+    ],
+    "threshold": 1
+   }
+  ]
+ }
+}

@@ -1,24 +1,63 @@
 import getopt, json, sys
 from source import artifacts, allowlists
 
+HELP_TEXT = """
+main.py <OPTIONS>
+
+Options:
+
+-o, --owner:
+    Github repository owner
+
+-r, --repository:
+    Github repository name
+
+-t, --token:
+    Github access token
+
+-l, --local-app-path:
+    local app path
+
+-d, --destination-app-path:
+    destination app path on Keylime target
+
+-a, --allowlist:
+    local path of Keylime allowlist
+
+-i, --intoto:
+    in-toto verification type. Valid options:
+    - 'simple'
+    - 'default-layout'
+    - filepath of existing layout. Also requires -k or --intoto-key
+
+-k, --intoto-key:
+    filepath of in-toto layout key, used alongside an in-toto layout path provided to -i or --intoto
+
+-p, --intoto-key-password:
+    password used with --intoto-key
+
+-s, --sigstore:
+    whether to verify inclusion proofs against Sigstore
+"""
+
 def main(argv):
     owner = None
     repository = None
     token = None
     local_app_path = None
     destination_app_path = None
-    intoto = None
+    intoto = {}
     sigstore_verify = False
     allowlist = None
     amended_policy = None
     try:
-        opts, _ = getopt.getopt(argv,"ho:r:t:l:d:a:i:s",["owner=", "repository=", "token=", "local-app-path=", "destination-app-path", "allowlist=", "intoto=", "sigstore"])
+        opts, _ = getopt.getopt(argv,"ho:r:t:l:d:a:i:k:p:s",["owner=", "repository=", "token=", "local-app-path=", "destination-app-path", "allowlist=", "intoto=", "intoto-key=", "intoto-key-password=", "sigstore"])
     except getopt.GetoptError:
         print('main.py OPTIONS')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print("main.py -o <repository owner> -r <repository name> -t <Github access token> -l <local app path> -d <destination app path on Keylime target> -a <local path of Keylime allowlist> -i <in-toto verification type. Valid options: 'simple', 'default-layout', filepath of existing layout> -s <whether to verify inclusion proofs against Sigstore>")
+            print(HELP_TEXT)
             sys.exit()
         elif opt in ("-o", "--owner"):
             owner = arg
@@ -33,7 +72,11 @@ def main(argv):
         elif opt in ("-a", "--allowlist"):
             allowlist = arg
         elif opt in ("-i", "--intoto"):
-            intoto = arg
+            intoto["layout_path"] = arg
+        elif opt in ("-k", "--intoto-key"):
+            intoto["layout_key"] = arg
+        elif opt in ("-p", "--intoto-key-password"):
+            intoto["layout_key_password"] = arg
         elif opt in ("-s", "--sigstore"):
             sigstore_verify = True
 

@@ -37,8 +37,8 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
         binaries[artifact_name] = artifact_raw
 
     if intoto:
-        if intoto == "simple":
-            print("Performing simple in-toto iinkfile verification")
+        if intoto["layout_path"] == "simple":
+            print("Performing simple in-toto linkfile verification")
             link_response = requests.get(link_urls["compile"]["url"])
             paths = json.loads(link_response.content)["signed"]["products"]
             link_hashes = [paths[p]["sha256"] for p in paths]
@@ -48,14 +48,13 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
                     verified_hashes += [binary_hash]
         else:
             print("EXPERIMENTAL: Verifying full in-toto supply chain layout")
-            layout_path = None
-            if intoto != "default-layout":
-                print(f"Using in-toto layout definition at {intoto}")
-                layout_path = intoto
+            if intoto["layout_path"] != "default-layout":
+                print(f"Using in-toto layout definition at {intoto['layout_path']}")
             try:
-                intoto_tools.verify_layout(binaries, link_urls, id_key_urls, layout_path)
+                intoto_tools.verify_layout(binaries, link_urls, id_key_urls, intoto)
             except Exception as e:
                 print(f"in-toto verification failed! Exception: {e}")
+                sys.exit(1)
 
             verified_hashes += [hashlib.sha256(b).hexdigest() for b in binaries.values()]
     else:
