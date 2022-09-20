@@ -108,3 +108,31 @@ A set of useful artifacts are included in the [`artifacts`](/artifacts/) directo
 - a sample Keylime allowlist (which can be used as input to the tool with `-a` or `--allowlist`)
 - a sample in-toto layout (which corresponds to the [`mbestavros/supply-chain-pipeline-demo`](https://github.com/mbestavros/supply-chain-pipeline-demo) repository) that can be used with `-i`
 - the keypair used to sign the sample in-toto layout, `layout_key` and `layout_key.pub`, which can be used with `-k`. The private key's password (`123`) must also be specified with `-p`.
+
+### Putting it all together
+
+To see the tool in action against a demo repository, provision a Github access token, substitute it into any one of these commands, and you're off to the races!
+
+Just verification:
+
+```shell
+python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your-github-token>
+```
+
+Verify and write to an empty Keylime allowlist:
+
+```shell
+python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your-github-token> -d /root/hello-go
+```
+
+Verify and write to an existing sample Keylime allowlist:
+
+```shell
+python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your-github-token> -d /root/hello-go -a ./artifacts/allowlist.txt
+```
+
+
+
+```shell
+python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your-github-token> -d /root/hello-go -a ./artifacts/allowlist.txt -i artifacts/root.layout -k artifacts/layout_key -p 123 -s
+```

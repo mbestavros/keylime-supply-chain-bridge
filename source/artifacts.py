@@ -50,6 +50,8 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
             print("EXPERIMENTAL: Verifying full in-toto supply chain layout")
             if intoto["layout_path"] != "default-layout":
                 print(f"Using in-toto layout definition at {intoto['layout_path']}")
+            else:
+                intoto["layout_path"] = None
             try:
                 intoto_tools.verify_layout(binaries, link_urls, id_key_urls, intoto)
             except Exception as e:

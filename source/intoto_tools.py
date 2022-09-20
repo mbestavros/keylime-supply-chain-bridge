@@ -61,8 +61,6 @@ def verify_layout(artifacts, link_urls, id_key_urls, intoto_args):
         else:
             # Create a layout key
             layout_key_path = generate_and_write_rsa_keypair(password="123", filepath=f"{tmpdirname}/layout_key")
-            shutil.copy(f"{tmpdirname}/layout_key", "layout_key")
-            shutil.copy(f"{tmpdirname}/layout_key.pub", "layout_key.pub")
             layout_key = import_rsa_privatekey_from_file(layout_key_path, password="123")
 
             layout = Layout()
@@ -95,8 +93,6 @@ def verify_layout(artifacts, link_urls, id_key_urls, intoto_args):
             metablock = Metablock(signed=layout)
             metablock.sign(layout_key)
             metablock.dump(f"{tmpdirname}/root.layout")
-            metablock.dump("root.layout")
-
 
         key_dict = {layout_key["keyid"]: layout_key}
         verifylib.in_toto_verify(metablock, key_dict, tmpdirname)
