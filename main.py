@@ -1,85 +1,42 @@
-import getopt, json, sys
+import argparse, json, sys
 from source import artifacts, allowlists
 
-HELP_TEXT = """
-main.py <OPTIONS>
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-o", "--owner", help="Github repository owner", action="store")
+    parser.add_argument("-r", "--repository", help="Github repository name", action="store")
+    parser.add_argument("-t", "--token", help="Github access token", action="store")
+    parser.add_argument("-l", "--local_app_path", help="local app path", action="store")
+    parser.add_argument("-d", "--destination_app_path", help="destination app path on Keylime target", action="store")
+    parser.add_argument("-a", "--allowlist", help="local path of Keylime allowlist", action="store")
+    parser.add_argument(
+        "-i", "--intoto",
+        help="""
+            in-toto verification type. Valid options:
+            - 'simple'
+            - 'default-layout'
+            - filepath of existing layout. Also requires -k or --intoto-key
+            """,
+        action="store"
+    )
+    parser.add_argument("-k", "--intoto_key", help="filepath of in-toto layout key, used alongside an in-toto layout path provided to -i or --intoto", action="store")
+    parser.add_argument("-p", "--intoto_key_password", help="password used with --intoto_key", action="store")
+    parser.add_argument("-s", "--sigstore", help="whether to verify inclusion proofs against Sigstore", action="store_true")
+    args = parser.parse_args()
 
-Options:
-
--o, --owner:
-    Github repository owner
-
--r, --repository:
-    Github repository name
-
--t, --token:
-    Github access token
-
--l, --local-app-path:
-    local app path
-
--d, --destination-app-path:
-    destination app path on Keylime target
-
--a, --allowlist:
-    local path of Keylime allowlist
-
--i, --intoto:
-    in-toto verification type. Valid options:
-    - 'simple'
-    - 'default-layout'
-    - filepath of existing layout. Also requires -k or --intoto-key
-
--k, --intoto-key:
-    filepath of in-toto layout key, used alongside an in-toto layout path provided to -i or --intoto
-
--p, --intoto-key-password:
-    password used with --intoto-key
-
--s, --sigstore:
-    whether to verify inclusion proofs against Sigstore
-"""
-
-def main(argv):
-    owner = None
-    repository = None
-    token = None
-    local_app_path = None
-    destination_app_path = None
-    intoto = {}
-    sigstore_verify = False
-    allowlist = None
+    owner = args.owner
+    repository = args.repository
+    token = args.token
+    local_app_path = args.local_app_path
+    destination_app_path = args.destination_app_path
+    intoto = {
+        "layout_path": args.intoto,
+        "layout_key": args.intoto_key,
+        "layout_key_password": args.intoto_key_password
+    }
+    sigstore_verify = args.sigstore
+    allowlist = args.allowlist
     amended_policy = None
-    try:
-        opts, _ = getopt.getopt(argv,"ho:r:t:l:d:a:i:k:p:s",["owner=", "repository=", "token=", "local-app-path=", "destination-app-path", "allowlist=", "intoto=", "intoto-key=", "intoto-key-password=", "sigstore"])
-    except getopt.GetoptError:
-        print('main.py OPTIONS')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            print(HELP_TEXT)
-            sys.exit()
-        elif opt in ("-o", "--owner"):
-            owner = arg
-        elif opt in ("-r", "--repository"):
-            repository = arg
-        elif opt in ("-t", "--token"):
-            token = arg
-        elif opt in ("-l", "--local-app-path"):
-            local_app_path = arg
-        elif opt in ("-d", "--destination-app-path"):
-            destination_app_path = arg
-        elif opt in ("-a", "--allowlist"):
-            allowlist = arg
-        elif opt in ("-i", "--intoto"):
-            intoto["layout_path"] = arg
-        elif opt in ("-k", "--intoto-key"):
-            intoto["layout_key"] = arg
-        elif opt in ("-p", "--intoto-key-password"):
-            intoto["layout_key_password"] = arg
-        elif opt in ("-s", "--sigstore"):
-            sigstore_verify = True
-
 
     if owner and repository and token:
         verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token, local_app_path, sigstore_verify, intoto)
@@ -101,4 +58,4 @@ def main(argv):
         print("Amended policy written to keylime-policy.json")
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+   main()

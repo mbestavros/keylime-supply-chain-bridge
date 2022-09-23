@@ -55,8 +55,8 @@ There are several validation options, each with varying complexity. The desired 
 
 If providing a custom layout, it must be signed by a keypair, and that keypair must also be provided with the following options:
 
-`-k` or `--intoto-key`: The path to the root name of a public/private key pair. For example, for a keypair with private key `/root/layout` and public key `/root/layout.pub`, `-k /root/layout` should be used.
-`-p` or `--intoto-key-password`: The password for the public/private key pair.
+`-k` or `--intoto_key`: The path to the root name of a public/private key pair. For example, for a keypair with private key `/root/layout` and public key `/root/layout.pub`, `-k /root/layout` should be used.
+`-p` or `--intoto_key_password`: The password for the public/private key pair.
 
 Example commands:
 
@@ -76,7 +76,7 @@ Example commands:
 
 The tool can also forward validated hashes to a Keylime policy.
 
-Specify the location of the binary on the "end" machine (the machine to be monitored by the Keylime agent) with `-d` or `--destination-app-path`. For example, if `hello-go` were to end up at `/root/hello-go` on the agent machine:
+Specify the location of the binary on the "end" machine (the machine to be monitored by the Keylime agent) with `-d` or `--destination_app_path`. For example, if `hello-go` were to end up at `/root/hello-go` on the agent machine:
 
 ```shell
 python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your access token> -d /root/hello-go
@@ -130,8 +130,6 @@ Verify and write to an existing sample Keylime allowlist:
 ```shell
 python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your-github-token> -d /root/hello-go -a ./artifacts/allowlist.txt
 ```
-
-
 
 ```shell
 python3 main.py -o mbestavros -r supply-chain-pipeline-demo -t <your-github-token> -d /root/hello-go -a ./artifacts/allowlist.txt -i artifacts/root.layout -k artifacts/layout_key -p 123 -s
