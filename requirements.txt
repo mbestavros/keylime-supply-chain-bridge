@@ -1,2 +1,4 @@
 githubgql
 in-toto
+requests
+simplejson

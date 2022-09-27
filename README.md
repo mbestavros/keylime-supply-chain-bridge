@@ -29,13 +29,11 @@ python -m venv .venv
 
 # Activate the virtual environment
 # This will add the prefix ".venv" to your shell prompt
-source in-toto-demo/bin/activate
+source .venv/bin/activate
 
 # Install project dependencies
 pip install -r requirements.txt
 ```
-
-
 
 ### Running the tool
 
