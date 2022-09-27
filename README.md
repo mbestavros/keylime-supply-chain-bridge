@@ -18,8 +18,24 @@ In order to interact with Github, a [personal access token](https://docs.github.
 You'll also need to install the `githubgql` library in order to interact with Github using the GraphQL API:
 
 ```shell
-> pip install githubgql
+pip install githubgql
 ```
+
+To spin up a Python virtualenv with the correct dependencies:
+
+```shell
+# Create a virtual environment
+python -m venv .venv
+
+# Activate the virtual environment
+# This will add the prefix ".venv" to your shell prompt
+source in-toto-demo/bin/activate
+
+# Install project dependencies
+pip install -r requirements.txt
+```
+
+
 
 ### Running the tool
 

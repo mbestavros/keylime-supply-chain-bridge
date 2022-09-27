@@ -132,3 +132,4 @@ dmypy.json
 keylime-policy.txt
 keylime-policy.json
 inspect.link
+.venv
