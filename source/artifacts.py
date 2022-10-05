@@ -28,7 +28,7 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
 
         if sigstore_verify:
             print(f"Verifying presence of valid signature and inclusion proof against Rekor...")
-            if signing.verify_inclusion_proof(artifact_raw, sig_response.content, crt_response.content):
+            if signing.verify_sigstore_python(artifact_raw, sig_response.content, crt_response.content):
                 print("Sigstore validation passed!")
             else:
                 print("Sigstore validation failed!")

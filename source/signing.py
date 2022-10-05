@@ -9,7 +9,14 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.exceptions import InvalidSignature
 from cryptography.x509 import load_pem_x509_certificate
 from os.path import exists
-from .sigstore import merkle, sigstore
+from typing import cast
+from .sigstore import merkle, sigstore_shim
+
+from sigstore._verify import (
+    CertificateVerificationFailure,
+    VerificationFailure,
+    Verifier,
+)
 
 # Signs an artifact with private key located at keypath.
 def sign(artifact, keypath):
@@ -61,14 +68,14 @@ def verify_inclusion_proof(artifact_raw, sig_raw, crt_raw):
     pubkey = load_pem_x509_certificate(crt_raw).public_key()
     artifact_hash = hashlib.sha256(artifact_raw).hexdigest()
 
-    search_response = sigstore.search(hash=artifact_hash)
+    search_response = sigstore_shim.search(hash=artifact_hash)
     uuids = json.loads(search_response.content)
 
     print(f'Found Rekor entries matching provided artifact hash. Verifying...')
 
     for uuid in uuids:
 
-        fetch_uuid_response = sigstore.fetch_with_uuid(uuid=uuid)
+        fetch_uuid_response = sigstore_shim.fetch_with_uuid(uuid=uuid)
 
         entries = json.loads(fetch_uuid_response.content)
         for key in entries.keys():
@@ -96,3 +103,21 @@ def verify_inclusion_proof(artifact_raw, sig_raw, crt_raw):
         else:
             print("No valid signature was found in any of the fetched Rekor entries!")
             return False
+
+# Verifies provided artifact against Sigstore using the sigstore-python library.
+def verify_sigstore_python(artifact_raw, sig_raw, crt_raw):
+    verifier = Verifier.production()
+
+    result = verifier.verify(
+        input_=artifact_raw,
+        certificate=crt_raw,
+        signature=sig_raw
+    )
+
+    if result:
+        return True
+    else:
+        result = cast(VerificationFailure, result)
+        print(f"FAIL")
+        print(f"Failure reason: {result.reason}")
+        return False
