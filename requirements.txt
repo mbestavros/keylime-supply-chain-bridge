@@ -1,4 +1,5 @@
 githubgql
 in-toto
 requests
+sigstore
 simplejson
