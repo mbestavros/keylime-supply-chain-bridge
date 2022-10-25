@@ -27,7 +27,7 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
             sys.exit(1)
 
         if sigstore_verify:
-            print(f"Verifying presence of valid signature and inclusion proof against Rekor...")
+            print(f"{artifact_name}: Verifying presence of valid signature and inclusion proof against Rekor...")
             if signing.verify_sigstore_python(artifact_raw, sig_response.content, crt_response.content):
                 print("Sigstore validation passed!")
             else:
@@ -38,7 +38,7 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
 
     if intoto:
         if intoto["layout_path"] == "simple":
-            print("Performing simple in-toto linkfile verification")
+            print(f"{artifact_name}: Performing simple in-toto linkfile verification")
             link_response = requests.get(link_urls["compile"]["url"])
             paths = json.loads(link_response.content)["signed"]["products"]
             link_hashes = [paths[p]["sha256"] for p in paths]
@@ -47,7 +47,7 @@ def fetch_verified_hashes(owner, repo, token, local_app_path=None, sigstore_veri
                 if binary_hash in link_hashes:
                     verified_hashes += [binary_hash]
         else:
-            print("EXPERIMENTAL: Verifying full in-toto supply chain layout")
+            print(f"{artifact_name}: Verifying full in-toto supply chain layout")
             if intoto["layout_path"] != "default-layout":
                 print(f"Using in-toto layout definition at {intoto['layout_path']}")
             else:

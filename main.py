@@ -38,6 +38,16 @@ def main():
     allowlist = args.allowlist
     amended_policy = None
 
+    print("""
+     --- SUPPLY CHAIN BRIDGE ---
+
+    This tool will verify an artifact's provenance using publicly-accessible
+    supply chain tooling, then forward verified hashes to a Keylime policy.
+
+     --- STEP 1: VERIFY BINARY ---
+
+    """)
+
     if owner and repository and token:
         verified_hashes = artifacts.fetch_verified_hashes(owner, repository, token, local_app_path, sigstore_verify, intoto)
         print(f"Verified hashes for {owner}/{repository}:")
@@ -45,6 +55,13 @@ def main():
             print(hash)
     else:
         print("--owner, --repository, and --token are all required to fetch artifacts from Github")
+
+    print("""
+
+     --- STEP 2: UPDATE KEYLIME POLICY ---
+
+    """)
+
     if destination_app_path:
         verified_hash = verified_hashes[0]
         print(f"Adding verified hash {verified_hash} to allowlist with destination path {destination_app_path}")
@@ -56,6 +73,12 @@ def main():
         with open("keylime-policy.json", "w") as f:
            f.write(json.dumps(amended_policy))
         print("Amended policy written to keylime-policy.json")
+
+    print("""
+
+     --- COMPLETE! ---
+
+    """)
 
 if __name__ == "__main__":
    main()
