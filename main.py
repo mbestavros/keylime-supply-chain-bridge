@@ -1,4 +1,4 @@
-import argparse, json, sys
+import argparse, json, os
 from source import artifacts, allowlists
 
 def main():
@@ -27,6 +27,8 @@ def main():
     owner = args.owner
     repository = args.repository
     token = args.token
+    if not token:
+        token = os.getenv("GH_TOKEN")
     local_app_path = args.local_app_path
     destination_app_path = args.destination_app_path
     intoto = {
